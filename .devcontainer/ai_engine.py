@@ -688,6 +688,81 @@ def get_verified_medication_warnings(medication_id):
 
         return [dict(row) for row in results]
 
+def warning_response(question):
+
+    if not question or not question.strip():
+        return "Please specify a medication."
+
+    # Remove common question words to extract the medication query.
+    query = question.lower()
+
+    query = re.sub(
+        r"\b(what|are|is|the|recorded|known|"
+        r"show|me|tell|about|warnings|warning|"
+        r"precautions|precaution|side effects|"
+        r"side effect|for|of|on|please)\b",
+        " ",
+        query
+    )
+
+    query = re.sub(r"[^a-z0-9\s]", " ", query)
+    query = re.sub(r"\s+", " ", query).strip()
+
+    if len(query) < 2:
+        return "Please specify the medication name."
+
+    medications = search_verified_medications(query)
+
+    if not medications:
+        return (
+            "I couldn't find a matching verified medication "
+            "reference in the CAREPULSE database."
+        )
+
+    output = ["### Recorded medication warnings"]
+
+    for medication in medications:
+
+        warnings = get_verified_medication_warnings(
+            medication["id"]
+        )
+
+        output.append(
+            f"\n**{medication['generic_name']}**"
+        )
+
+        if not warnings:
+            output.append(
+                "- No verified warning records were found "
+                "in the CAREPULSE database."
+            )
+            continue
+
+        for warning in warnings:
+
+            output.append(
+                f"- **{warning['warning_type']}**: "
+                f"{warning['description']}"
+            )
+
+            if warning.get("source_name"):
+                output.append(
+                    f"  - Source: {warning['source_name']}"
+                )
+
+            if warning.get("last_reviewed"):
+                output.append(
+                    f"  - Last reviewed: {warning['last_reviewed']}"
+                )
+
+    output.append(
+        "\nThese are database records, not personalised "
+        "medical advice. Missing records do not establish "
+        "that a medication has no risks."
+    )
+
+    return "\n".join(output)
+
         
 def review_medication_warning(
     warning_id,
