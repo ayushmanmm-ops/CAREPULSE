@@ -251,6 +251,81 @@ def add_medication_warning(
 
         return cursor.lastrowid
 
+def review_medication_warning(
+    warning_id,
+    reviewer,
+    decision,
+    review_notes=""
+):
+
+    reviewer = (reviewer or "").strip()
+    decision = (decision or "").strip().lower()
+    review_notes = (review_notes or "").strip()
+
+    if not isinstance(warning_id, int) or warning_id <= 0:
+        raise ValueError("A valid warning ID is required.")
+
+    if not reviewer:
+        raise ValueError("Reviewer name is required.")
+
+    if decision not in ("approved", "rejected"):
+        raise ValueError("Decision must be approved or rejected.")
+
+    with get_connection() as conn:
+
+        warning = conn.execute("""
+        SELECT id, source_id
+        FROM medication_warnings
+        WHERE id = ?
+        """, (warning_id,)).fetchone()
+
+        if not warning:
+            raise ValueError("Medication warning not found.")
+
+        if not warning[1]:
+            raise ValueError("A source is required before approval.")
+
+        conn.execute("""
+        UPDATE medication_warnings
+        SET last_reviewed = ?
+        WHERE id = ?
+        """, (
+            datetime.now().date().isoformat(),
+            warning_id
+        ))
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_warning_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            warning_id INTEGER NOT NULL,
+            reviewer TEXT NOT NULL,
+            review_decision TEXT NOT NULL,
+            review_notes TEXT,
+            reviewed_at TEXT NOT NULL
+        )
+        """)
+
+        conn.execute("""
+        INSERT INTO medication_warning_reviews (
+            warning_id,
+            reviewer,
+            review_decision,
+            review_notes,
+            reviewed_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            warning_id,
+            reviewer,
+            decision,
+            review_notes,
+            datetime.now().isoformat(timespec="seconds")
+        ))
+
+        conn.commit()
+
+        return True
+
 def add_knowledge_source(
     source_name,
     organisation,
