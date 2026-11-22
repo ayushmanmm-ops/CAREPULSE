@@ -1,7 +1,8 @@
-
 import streamlit as st
 import sqlite3
 from datetime import datetime, timedelta
+
+from ai_engine import answer_question
 
 # ==========================================
 # CAREPULSE V2
