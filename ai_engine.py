@@ -164,6 +164,7 @@ def analyse_events(days=30):
     }
 
 
+
 def medication_patterns(days=30):
 
     data = analyse_events(days)
@@ -174,28 +175,61 @@ def medication_patterns(days=30):
 
         med_id, name, dosage, compartment, reminders = med
 
+        if not name:
+            continue
+
         med_events = [
             event for event in data["events"]
-            if event[0].lower() == name.lower()
+            if event[0]
+            and event[0].strip().casefold() == name.strip().casefold()
         ]
 
         counts = Counter(
             event[1] for event in med_events
         )
 
+        source_counts = Counter(
+            event[3] if len(event) > 3 and event[3] else "unknown"
+            for event in med_events
+        )
+
+        openings = counts["compartment_opened"]
+        reported_taken = counts["patient_reported_taken"]
+        reported_missed = counts["patient_reported_missed"]
+
+        total_patient_reports = reported_taken + reported_missed
+
+        if total_patient_reports:
+            reported_taken_percentage = round(
+                reported_taken / total_patient_reports * 100,
+                1
+            )
+        else:
+            reported_taken_percentage = None
+
         results[name] = {
-            "openings": counts["compartment_opened"],
-            "reported_taken":
-                counts["patient_reported_taken"],
-            "reported_missed":
-                counts["patient_reported_missed"],
-            "reminders_sent":
-                counts["reminder_sent"],
-            "reminders_dismissed":
-                counts["reminder_dismissed"]
+            "medication_id": med_id,
+            "openings": openings,
+            "reported_taken": reported_taken,
+            "reported_missed": reported_missed,
+
+            "reminders_sent": counts["reminder_sent"],
+            "reminders_dismissed": counts["reminder_dismissed"],
+
+            "total_patient_reports": total_patient_reports,
+            "reported_taken_percentage": reported_taken_percentage,
+
+            "event_sources": dict(source_counts),
+
+            "interpretation": (
+                "Based on patient-reported events only. "
+                "Compartment openings are recorded separately "
+                "and do not confirm medication ingestion."
+            )
         }
 
     return results
+
 
 
 # ==========================================
