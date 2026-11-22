@@ -764,7 +764,51 @@ def reminder_intelligence(days=30):
         "dismissed_percentage": dismissed_percentage,
         "upcoming_reminders": upcoming
     }
+def reminder_intelligence_response(days=30):
 
+    report = reminder_intelligence(days)
+
+    output = [
+        f"### Reminder Intelligence — Last {days} Days",
+        "",
+        f"- Reminders sent: {report['reminders_sent']}",
+        f"- Reminders dismissed: {report['reminders_dismissed']}",
+        f"- Total recorded reminder events: {report['total_reminder_events']}"
+    ]
+
+    percentage = report["dismissed_percentage"]
+
+    if percentage is not None:
+        output.append(
+            f"- Dismissed reminder events: {percentage}%"
+        )
+    else:
+        output.append(
+            "- Dismissal percentage: Insufficient reminder records"
+        )
+
+    output.append("\n### Upcoming Scheduled Reminders")
+
+    upcoming = report["upcoming_reminders"]
+
+    if upcoming:
+        for item in upcoming[:8]:
+            output.append(
+                f"- **{item['name']}** — "
+                f"{item['time'].strftime('%d %b, %I:%M %p')} "
+                f"(Compartment {item['compartment']})"
+            )
+    else:
+        output.append("- No upcoming reminders configured.")
+
+    output.extend([
+        "",
+        "Reminder events describe recorded system activity.",
+        "A reminder being sent or dismissed does not establish "
+        "whether medication was taken."
+    ])
+
+    return "\n".join(output)
 # ==========================================
 # MAIN INTELLIGENCE ORCHESTRATOR
 # ==========================================
