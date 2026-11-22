@@ -156,6 +156,84 @@ def add_medication_reference(
 
         return cursor.lastrowid
 
+def review_medication_reference(
+    medication_id,
+    reviewer,
+    decision,
+    review_notes="",
+    source_id=None
+):
+
+    if not reviewer or not reviewer.strip():
+        raise ValueError("Reviewer identity is required")
+
+    if decision not in ("approved", "rejected"):
+        raise ValueError("Invalid review decision")
+
+    with get_connection() as conn:
+
+        medication = conn.execute("""
+            SELECT id, source_id
+            FROM medication_reference
+            WHERE id = ?
+        """, (medication_id,)).fetchone()
+
+        if not medication:
+            raise ValueError("Medication record not found")
+
+        final_source_id = source_id or medication[1]
+
+        if decision == "approved" and not final_source_id:
+            raise ValueError(
+                "An approved entry must have a supporting source"
+            )
+
+        if final_source_id is not None:
+            source = conn.execute("""
+                SELECT id FROM knowledge_sources
+                WHERE id = ?
+            """, (final_source_id,)).fetchone()
+
+            if not source:
+                raise ValueError("Knowledge source not found")
+
+        status = (
+            "verified" if decision == "approved"
+            else "rejected"
+        )
+
+        conn.execute("""
+            UPDATE medication_reference
+            SET verification_status = ?,
+                last_reviewed = ?
+            WHERE id = ?
+        """, (
+            status,
+            datetime.now().date().isoformat(),
+            medication_id
+        ))
+
+        conn.execute("""
+            INSERT INTO medication_reference_reviews (
+                medication_id,
+                reviewer,
+                review_decision,
+                review_notes,
+                source_id,
+                reviewed_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            medication_id,
+            reviewer.strip(),
+            decision,
+            review_notes,
+            final_source_id,
+            datetime.now().isoformat(timespec="seconds")
+        ))
+
+    return status
+
 def get_database_data():
 
     if not DB_PATH.exists():
