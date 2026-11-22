@@ -64,6 +64,46 @@ def search_medication_reference(query, limit=5):
 
         return [dict(row) for row in results]
 
+def add_knowledge_source(
+    source_name,
+    organisation,
+    source_url,
+    source_type
+):
+
+    if not source_name or not source_name.strip():
+        raise ValueError("Source name is required")
+
+    with get_connection() as conn:
+
+        existing = conn.execute("""
+        SELECT id FROM knowledge_sources
+        WHERE source_url = ?
+        """, (source_url,)).fetchone()
+
+        if existing:
+            return existing[0]
+
+        cursor = conn.execute("""
+        INSERT INTO knowledge_sources
+        (
+            source_name,
+            organisation,
+            source_url,
+            source_type,
+            accessed_date
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            source_name.strip(),
+            organisation,
+            source_url,
+            source_type,
+            datetime.now().date().isoformat()
+        ))
+
+        return cursor.lastrowid
+
 
 def get_database_data():
 
