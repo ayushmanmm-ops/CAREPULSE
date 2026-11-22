@@ -660,10 +660,10 @@ def reminder_response():
 # MAIN INTELLIGENCE ORCHESTRATOR
 # ==========================================
 
+
 def answer_question(question, history=None):
 
     if not question or not question.strip():
-
         return "Please enter a question."
 
     safety = check_safety(question)
@@ -674,12 +674,11 @@ def answer_question(question, history=None):
     intent = detect_intent(question)
 
     if intent == "greeting":
-
         return (
             "Hello! I'm CAREPULSE Intelligence. "
             "I can help you explore medication records, "
-            "event history, scheduled reminders and "
-            "recorded activity patterns."
+            "event history, scheduled reminders, "
+            "recorded activity patterns and medication warnings."
         )
 
     if intent == "medications":
@@ -694,8 +693,49 @@ def answer_question(question, history=None):
     if intent == "reminders":
         return reminder_response()
 
-    if intent == "openings":
+    if intent == "warnings":
+        return warning_response(question)
 
+    if intent == "interactions":
+        return interaction_response(question)
+
+    if intent == "openings":
+        return get_intent_description("openings")
+
+    if intent == "taken":
+        return get_intent_description("taken")
+
+    if intent == "missed":
+        return get_intent_description("missed")
+
+    if intent == "about":
+        return """
+### CAREPULSE Intelligence
+
+I can currently:
+
+1. Retrieve saved medication records.
+2. Summarise recorded events.
+3. Analyse medication activity patterns.
+4. Display upcoming scheduled reminders.
+5. Retrieve locally verified medication warnings.
+6. Explain recorded event categories.
+
+I cannot diagnose, prescribe, or confirm medication ingestion.
+"""
+
+    return (
+        "I couldn't confidently classify that question. "
+        "I can answer questions about saved medication records, "
+        "event history, reminders, recorded patterns and "
+        "available medication reference information. "
+        "I cannot provide personalised medical advice."
+    )
+
+
+def get_intent_description(intent):
+
+    if intent == "openings":
         return (
             "A compartment opening is a sensor or "
             "user-recorded event showing that a compartment "
@@ -704,7 +744,6 @@ def answer_question(question, history=None):
         )
 
     if intent == "taken":
-
         return (
             "A patient-reported taken event means the patient "
             "reported taking the medication. It is a separate "
@@ -722,7 +761,6 @@ def answer_question(question, history=None):
         )
 
     if intent == "about":
-
         return """
 ### CAREPULSE Intelligence
 
