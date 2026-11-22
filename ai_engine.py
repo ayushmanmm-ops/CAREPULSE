@@ -329,6 +329,7 @@ INTENTS = {
 
 
 
+
 def detect_intent(question):
 
     text = (question or "").lower().strip()
@@ -336,66 +337,79 @@ def detect_intent(question):
     if not text:
         return "unknown"
 
-    # Normalise punctuation
     text = re.sub(r"[^a-z0-9\s]", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
 
-    # CAREPULSE feature questions
-    feature_phrases = [
+    # Greeting
+    if re.search(r"\b(hello|hi|hey|good morning|good afternoon)\b", text):
+        return "greeting"
+
+    # CAREPULSE features
+    if any(phrase in text for phrase in [
         "what can carepulse do",
         "what does carepulse do",
         "what is carepulse",
         "how does carepulse work",
         "carepulse features",
-        "help me understand carepulse"
-    ]
+        "what can you do"
+    ]):
+        return "about"
 
-    if any(phrase in text for phrase in feature_phrases):
-        return "features"
-
-    # Reminder questions
-    reminder_keywords = [
+    # Reminders
+    if any(word in text for word in [
         "reminder", "reminders", "schedule",
         "scheduled", "next dose", "upcoming dose",
-        "when do i take", "when is my medication",
-        "medicine time", "medication time"
-    ]
-
-    if any(word in text for word in reminder_keywords):
+        "medication time", "medicine time"
+    ]):
         return "reminders"
 
     # Medication history
-    history_keywords = [
-        "history", "past events", "previous events",
-        "medication records", "medicine records",
-        "what happened", "show my events"
-    ]
-
-    if any(word in text for word in history_keywords):
+    if any(word in text for word in [
+        "history", "event history", "my events",
+        "activity", "past events"
+    ]):
         return "events"
 
-    # Adherence and patterns
-    pattern_keywords = [
-        "adherence", "adherent", "pattern",
-        "patterns", "missed", "missed doses",
-        "taken doses", "compliance", "consistency"
-    ]
+    # Compartment openings
+    if any(word in text for word in [
+        "compartment opening", "compartment opened",
+        "opened compartment"
+    ]):
+        return "openings"
 
-    if any(word in text for word in pattern_keywords):
+    # Patient-reported taken
+    if any(word in text for word in [
+        "reported taken", "patient reported",
+        "recorded taken", "medication taken"
+    ]):
+        return "taken"
+
+    # Patient-reported missed
+    if any(word in text for word in [
+        "reported missed", "missed events",
+        "missed medication"
+    ]):
+        return "missed"
+
+    # Adherence and patterns
+    if any(word in text for word in [
+        "adherence", "adherent", "patterns",
+        "pattern", "trend", "trends",
+        "analyse my data", "analyze my data",
+        "monthly report", "weekly report",
+        "last 30 days", "consistency"
+    ]):
         return "patterns"
 
-    # Saved medication questions
-    medication_keywords = [
-        "my medication", "my medications",
-        "my medicine", "my medicines",
-        "saved medication", "saved medications",
-        "list my medication", "show my medication"
-    ]
-
-    if any(word in text for word in medication_keywords):
+    # Saved medications
+    if any(word in text for word in [
+        "medication", "medications",
+        "medicine", "medicines", "drug"
+    ]):
         return "medications"
 
     return "unknown"
+
 
 
 
