@@ -20,6 +20,50 @@ DB_PATH = Path(__file__).resolve().parent / "carepulse.db"
 def get_connection():
     return sqlite3.connect(DB_PATH)
 
+def search_medication_reference(query, limit=5):
+
+    query = (query or "").strip()
+
+    if len(query) < 2:
+        return []
+
+    search_term = f"%{query}%"
+
+    with get_connection() as conn:
+
+        conn.row_factory = sqlite3.Row
+
+        results = conn.execute("""
+        SELECT
+            m.id,
+            m.generic_name,
+            m.brand_names,
+            m.drug_class,
+            m.approved_uses,
+            m.dosage_forms,
+            m.storage_guidance,
+            m.last_reviewed,
+            m.verification_status,
+            s.source_name,
+            s.organisation,
+            s.source_url
+        FROM medication_reference AS m
+        LEFT JOIN knowledge_sources AS s
+            ON m.source_id = s.id
+        WHERE
+            m.generic_name LIKE ?
+            OR m.brand_names LIKE ?
+            OR m.drug_class LIKE ?
+        LIMIT ?
+        """, (
+            search_term,
+            search_term,
+            search_term,
+            limit
+        )).fetchall()
+
+        return [dict(row) for row in results]
+
 
 def get_database_data():
 
