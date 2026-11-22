@@ -190,6 +190,67 @@ def get_verified_medication_interactions(medication_a, medication_b):
 
         return [dict(row) for row in results]
 
+def add_medication_warning(
+    medication_id,
+    warning_type,
+    description,
+    source_id
+):
+
+    warning_type = (warning_type or "").strip()
+    description = (description or "").strip()
+
+    if not isinstance(medication_id, int) or medication_id <= 0:
+        raise ValueError("A valid medication ID is required.")
+
+    if not warning_type or not description:
+        raise ValueError("Warning type and description are required.")
+
+    if not isinstance(source_id, int) or source_id <= 0:
+        raise ValueError("A valid source ID is required.")
+
+    with get_connection() as conn:
+
+        medication = conn.execute("""
+        SELECT id
+        FROM medication_reference
+        WHERE id = ?
+        """, (medication_id,)).fetchone()
+
+        source = conn.execute("""
+        SELECT id
+        FROM knowledge_sources
+        WHERE id = ?
+        """, (source_id,)).fetchone()
+
+        if not medication:
+            raise ValueError("Medication reference not found.")
+
+        if not source:
+            raise ValueError("Knowledge source not found.")
+
+        cursor = conn.execute("""
+        INSERT INTO medication_warnings
+        (
+            medication_id,
+            warning_type,
+            description,
+            source_id,
+            last_reviewed
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            medication_id,
+            warning_type,
+            description,
+            source_id,
+            datetime.now().date().isoformat()
+        ))
+
+        conn.commit()
+
+        return cursor.lastrowid
+
 def add_knowledge_source(
     source_name,
     organisation,
