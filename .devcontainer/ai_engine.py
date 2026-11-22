@@ -341,6 +341,7 @@ def add_medication_interaction(
 
         return cursor.lastrowid
 
+
 def review_medication_interaction(
     interaction_id,
     reviewer,
@@ -372,15 +373,27 @@ def review_medication_interaction(
         if not interaction:
             raise ValueError("Interaction record not found.")
 
-        if decision == "approved" and not interaction[1]:
-            raise ValueError("A source is required before approval.")
+        if decision == "approved":
 
-        status = "verified" if decision == "approved" else "rejected"
+            if not interaction[1]:
+                raise ValueError("A source is required before approval.")
+
+            source_check = validate_knowledge_source(interaction[1])
+
+            if not source_check["valid"]:
+                raise ValueError(
+                    "Source validation failed: "
+                    + source_check["reason"]
+                )
+
+            status = "verified"
+
+        else:
+            status = "rejected"
 
         conn.execute("""
         UPDATE medication_interactions
-        SET
-            verification_status = ?,
+        SET verification_status = ?,
             last_reviewed = ?
         WHERE id = ?
         """, (
