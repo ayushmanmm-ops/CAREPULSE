@@ -53,6 +53,18 @@ def initialise_database():
         )
         """)
 
+        warning_columns = [
+            row[1] for row in conn.execute(
+                "PRAGMA table_info(medication_warnings)"
+            )
+        ]
+
+        if "verification_status" not in warning_columns:
+            conn.execute("""
+                ALTER TABLE medication_warnings
+                ADD COLUMN verification_status TEXT DEFAULT 'unverified'
+            """)
+
         conn.execute("""
         CREATE TABLE IF NOT EXISTS patient_profile (
             id INTEGER PRIMARY KEY CHECK (id = 1),
