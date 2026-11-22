@@ -107,7 +107,11 @@ def get_database_data():
 # EVENT ANALYTICS
 # ==========================================
 
+
 def analyse_events(days=30):
+
+    if not isinstance(days, int) or days < 1:
+        raise ValueError("days must be a positive integer.")
 
     medications, events = get_database_data()
 
@@ -130,18 +134,31 @@ def analyse_events(days=30):
         event[1] for event in recent
     )
 
+    source_counts = Counter(
+        event[3] if len(event) > 3 and event[3] else "unknown"
+        for event in recent
+    )
+
     return {
         "period_days": days,
         "total_events": len(recent),
+
         "openings": counts["compartment_opened"],
+
         "patient_reported_taken":
             counts["patient_reported_taken"],
+
         "patient_reported_missed":
             counts["patient_reported_missed"],
+
         "reminders_sent":
             counts["reminder_sent"],
+
         "reminders_dismissed":
             counts["reminder_dismissed"],
+
+        "source_counts": dict(source_counts),
+
         "medications": medications,
         "events": recent
     }
