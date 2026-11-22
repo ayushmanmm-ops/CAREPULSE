@@ -392,6 +392,7 @@ INTENTS = {
 
 
 
+
 def detect_intent(question):
 
     text = (question or "").lower().strip()
@@ -403,7 +404,10 @@ def detect_intent(question):
     text = re.sub(r"\s+", " ", text).strip()
 
     # Greeting
-    if re.search(r"\b(hello|hi|hey|good morning|good afternoon)\b", text):
+    if re.search(
+        r"\b(hello|hi|hey|good morning|good afternoon)\b",
+        text
+    ):
         return "greeting"
 
     # CAREPULSE features
@@ -417,6 +421,24 @@ def detect_intent(question):
     ]):
         return "about"
 
+    # Medication interactions
+    if any(word in text for word in [
+        "interaction", "interactions",
+        "interact", "interacting",
+        "drug combination",
+        "medicine combination"
+    ]):
+        return "interactions"
+
+    # Medication warnings
+    if any(word in text for word in [
+        "warning", "warnings",
+        "side effect", "side effects",
+        "precaution", "precautions",
+        "contraindication", "contraindications"
+    ]):
+        return "warnings"
+
     # Reminders
     if any(word in text for word in [
         "reminder", "reminders", "schedule",
@@ -425,16 +447,10 @@ def detect_intent(question):
     ]):
         return "reminders"
 
-    # Medication history
-    if any(word in text for word in [
-        "history", "event history", "my events",
-        "activity", "past events"
-    ]):
-        return "events"
-
     # Compartment openings
     if any(word in text for word in [
-        "compartment opening", "compartment opened",
+        "compartment opening",
+        "compartment opened",
         "opened compartment"
     ]):
         return "openings"
@@ -452,6 +468,13 @@ def detect_intent(question):
         "missed medication"
     ]):
         return "missed"
+
+    # Event history
+    if any(word in text for word in [
+        "history", "event history",
+        "my events", "activity", "past events"
+    ]):
+        return "events"
 
     # Adherence and patterns
     if any(word in text for word in [
@@ -471,6 +494,7 @@ def detect_intent(question):
         return "medications"
 
     return "unknown"
+
 
 
 
