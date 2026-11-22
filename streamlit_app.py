@@ -147,6 +147,19 @@ def initialise_database():
         )
         """)
 
+        # Medication knowledge review audit trail.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_reference_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            medication_id INTEGER NOT NULL,
+            reviewer TEXT NOT NULL,
+            review_decision TEXT NOT NULL,
+            review_notes TEXT,
+            source_id INTEGER,
+            reviewed_at TEXT NOT NULL
+        )
+        """)
+
         columns = [
             row[1] for row in
             conn.execute("PRAGMA table_info(medications)")
