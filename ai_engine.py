@@ -229,7 +229,55 @@ def medication_patterns(days=30):
         }
 
     return results
+def patient_insights(days=30):
 
+    data = analyse_events(days)
+    patterns = medication_patterns(days)
+
+    insights = []
+
+    if not data["events"]:
+        insights.append(
+            "No recorded events were found in this period."
+        )
+
+    for name, stats in patterns.items():
+
+        taken = stats["reported_taken"]
+        missed = stats["reported_missed"]
+        openings = stats["openings"]
+
+        if missed > taken:
+            insights.append(
+                f"{name}: More patient-reported missed "
+                "events than patient-reported taken events."
+            )
+
+        if openings > 0 and taken == 0 and missed == 0:
+            insights.append(
+                f"{name}: Compartment openings were recorded "
+                "without patient-reported taken or missed events."
+            )
+
+        if taken > 0 and missed == 0:
+            insights.append(
+                f"{name}: Patient-reported taken events "
+                "were recorded, with no patient-reported "
+                "missed events in this period."
+            )
+
+    return {
+        "period_days": days,
+        "total_events": data["total_events"],
+        "medications_analysed": len(patterns),
+        "patient_reported_taken": data["patient_reported_taken"],
+        "patient_reported_missed": data["patient_reported_missed"],
+        "compartment_openings": data["openings"],
+        "reminders_sent": data["reminders_sent"],
+        "reminders_dismissed": data["reminders_dismissed"],
+        "insights": insights,
+        "medication_patterns": patterns
+    }
 
 
 # ==========================================
