@@ -140,6 +140,37 @@ def get_medication_warnings(medication_id):
 
         return [dict(row) for row in results]
 
+def get_verified_medication_warnings(medication_id):
+
+    if not isinstance(medication_id, int) or medication_id <= 0:
+        return []
+
+    with get_connection() as conn:
+
+        conn.row_factory = sqlite3.Row
+
+        results = conn.execute("""
+        SELECT
+            w.id,
+            w.medication_id,
+            w.warning_type,
+            w.description,
+            w.last_reviewed,
+            w.verification_status,
+            s.source_name,
+            s.organisation,
+            s.source_url
+        FROM medication_warnings AS w
+        LEFT JOIN knowledge_sources AS s
+            ON w.source_id = s.id
+        WHERE
+            w.medication_id = ?
+            AND w.verification_status = 'verified'
+        ORDER BY w.last_reviewed DESC
+        """, (medication_id,)).fetchall()
+
+        return [dict(row) for row in results]
+
 def get_verified_medication_interactions(medication_a, medication_b):
 
     medication_a = (medication_a or "").strip()
