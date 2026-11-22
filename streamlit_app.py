@@ -1,151 +1,298 @@
-import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
 
-# Set the title and favicon that appear in the Browser's tab bar.
+import streamlit as st
+import sqlite3
+from datetime import datetime
+
+# -----------------------------
+# PAGE CONFIGURATION
+# -----------------------------
+
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title="CAREPULSE",
+    page_icon="💊",
+    layout="wide"
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# -----------------------------
+# DATABASE
+# -----------------------------
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+conn = sqlite3.connect("carepulse.db", check_same_thread=False)
+cursor = conn.cursor()
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS medications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    dosage TEXT,
+    compartment INTEGER,
+    reminder TEXT
+)
+""")
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    medication_id INTEGER,
+    medication_name TEXT,
+    event_type TEXT,
+    event_time TEXT
+)
+""")
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+conn.commit()
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
+
+def record_event(med_id, name, event_type):
+    cursor.execute("""
+    INSERT INTO events
+    (medication_id, medication_name, event_type, event_time)
+    VALUES (?, ?, ?, ?)
+    """, (
+        med_id,
+        name,
+        event_type,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+
+
+# -----------------------------
+# SIDEBAR
+# -----------------------------
+
+st.sidebar.title("💊 CAREPULSE")
+
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Dashboard",
+        "Add Medication",
+        "Medication History",
+        "AI Assistant",
+        "About"
+    ]
+)
+
+# -----------------------------
+# DASHBOARD
+# -----------------------------
+
+if page == "Dashboard":
+
+    st.title("💊 CAREPULSE")
+    st.subheader("Your Personal Medication Companion")
+
+    st.write("Welcome to your patient dashboard.")
+
+    cursor.execute("SELECT * FROM medications")
+    medications = cursor.fetchall()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Active Medications", len(medications))
+
+    with col2:
+        st.metric("Recorded Events", cursor.execute(
+            "SELECT COUNT(*) FROM events"
+        ).fetchone()[0])
+
+    st.divider()
+
+    st.header("Your Medication Schedule")
+
+    if medications:
+
+        for med in medications:
+
+            med_id, name, dosage, compartment, reminder = med
+
+            with st.container(border=True):
+
+                st.subheader(name)
+
+                st.write("Dosage label:", dosage or "Not specified")
+                st.write("Compartment:", compartment)
+                st.write("Reminder:", reminder)
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button(
+                        "Record Compartment Opening",
+                        key=f"open_{med_id}"
+                    ):
+                        record_event(
+                            med_id,
+                            name,
+                            "compartment_opened"
+                        )
+                        st.success("Opening event recorded.")
+                        st.rerun()
+
+                with col2:
+                    if st.button(
+                        "I Report Medication Taken",
+                        key=f"taken_{med_id}"
+                    ):
+                        record_event(
+                            med_id,
+                            name,
+                            "patient_reported_taken"
+                        )
+                        st.success("Patient report recorded.")
+                        st.rerun()
+
+    else:
+        st.info("No medications added yet. Use Add Medication.")
+
+    st.caption(
+        "A compartment opening does not prove medication ingestion."
     )
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
 
-    return gdp_df
+# -----------------------------
+# ADD MEDICATION
+# -----------------------------
 
-gdp_df = get_gdp_data()
+elif page == "Add Medication":
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+    st.title("Add New Medication")
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
+    with st.form("medication_form"):
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
+        name = st.text_input("Medication Name")
 
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
+        dosage = st.text_input(
+            "Dosage label (as prescribed)"
         )
+
+        compartment = st.number_input(
+            "Compartment Number",
+            min_value=1,
+            max_value=12,
+            value=1
+        )
+
+        reminder = st.time_input(
+            "Scheduled Reminder"
+        )
+
+        submit = st.form_submit_button("Save Medication")
+
+        if submit:
+
+            if name.strip():
+
+                cursor.execute("""
+                INSERT INTO medications
+                (name, dosage, compartment, reminder)
+                VALUES (?, ?, ?, ?)
+                """, (
+                    name.strip(),
+                    dosage,
+                    compartment,
+                    reminder.strftime("%H:%M")
+                ))
+
+                conn.commit()
+
+                st.success("Medication added successfully!")
+
+            else:
+                st.error("Please enter a medication name.")
+
+
+# -----------------------------
+# MEDICATION HISTORY
+# -----------------------------
+
+elif page == "Medication History":
+
+    st.title("Medication Event History")
+
+    cursor.execute("""
+    SELECT medication_name, event_type, event_time
+    FROM events
+    ORDER BY id DESC
+    """)
+
+    events = cursor.fetchall()
+
+    if events:
+
+        for name, event, event_time in events:
+
+            with st.container(border=True):
+
+                st.write("**Medication:**", name)
+                st.write("**Event:**", event)
+                st.caption(event_time)
+
+    else:
+        st.info("No events recorded yet.")
+
+
+# -----------------------------
+# AI ASSISTANT
+# -----------------------------
+
+elif page == "AI Assistant":
+
+    st.title("🤖 CAREPULSE AI Assistant")
+
+    st.write(
+        "Ask general questions about medication terminology "
+        "and medication information."
+    )
+
+    st.warning(
+        "AI integration is not connected yet. "
+        "This section is currently a prototype."
+    )
+
+    question = st.text_area(
+        "Enter your question"
+    )
+
+    if st.button("Submit Question"):
+
+        if question.strip():
+            st.info(
+                "Your question has been received. "
+                "The AI response engine will be integrated "
+                "in a later development stage."
+            )
+
+        else:
+            st.error("Please enter a question.")
+
+
+# -----------------------------
+# ABOUT
+# -----------------------------
+
+elif page == "About":
+
+    st.title("About CAREPULSE")
+
+    st.write(
+        "CAREPULSE is a medication reminder and "
+        "event-monitoring system combining software, "
+        "AI-assisted analysis and a future physical device."
+    )
+
+    st.subheader("Core Features")
+
+    st.write("- Medication management")
+    st.write("- Medication event history")
+    st.write("- Compartment opening records")
+    st.write("- Patient-reported medication records")
+    st.write("- AI medical information assistant (planned)")
+    st.write("- Smart physical reminder device (planned)")
+
+    st.info(
+        "Opening a compartment is not proof that "
+        "medication was swallowed."
+    )
