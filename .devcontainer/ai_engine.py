@@ -688,14 +688,13 @@ def get_verified_medication_warnings(medication_id):
 
         return [dict(row) for row in results]
 
-
+        
 def review_medication_warning(
     warning_id,
     reviewer,
     decision,
     review_notes=""
 ):
-
     reviewer = (reviewer or "").strip()
     decision = (decision or "").strip().lower()
     review_notes = (review_notes or "").strip()
@@ -733,5 +732,42 @@ def review_medication_warning(
                 raise ValueError(source_check["reason"])
 
         status = (
-            "verified" if decision == "approved"
-  
+            "verified"
+            if decision == "approved"
+            else "rejected"
+        )
+
+        reviewed_at = datetime.now().isoformat(
+            timespec="seconds"
+        )
+
+        conn.execute("""
+            UPDATE medication_warnings
+            SET
+                verification_status = ?,
+                last_reviewed = ?
+            WHERE id = ?
+        """, (
+            status,
+            reviewed_at,
+            warning_id
+        ))
+
+        conn.execute("""
+            INSERT INTO medication_warning_reviews (
+                warning_id,
+                reviewer,
+                review_decision,
+                review_notes,
+                reviewed_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            warning_id,
+            reviewer,
+            decision,
+            review_notes,
+            reviewed_at
+        ))
+
+        return status 
