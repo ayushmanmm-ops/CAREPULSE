@@ -62,6 +62,91 @@ def initialise_database():
         )
         """)
 
+        # ==========================================
+        # CAREPULSE INTELLIGENCE DATABASE
+        # ==========================================
+
+        # Preserve the source of every recorded event.
+        event_columns = [
+            row[1] for row in
+            conn.execute("PRAGMA table_info(events)")
+        ]
+
+        if "event_source" not in event_columns:
+            conn.execute("""
+                ALTER TABLE events
+                ADD COLUMN event_source TEXT DEFAULT 'unknown'
+            """)
+
+        # Medication knowledge reference library.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_reference (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            generic_name TEXT NOT NULL,
+            brand_names TEXT,
+            drug_class TEXT,
+            approved_uses TEXT,
+            dosage_forms TEXT,
+            storage_guidance TEXT,
+            source_id INTEGER,
+            last_reviewed TEXT,
+            verification_status TEXT DEFAULT 'unverified'
+        )
+        """)
+
+        # Documented medication warnings.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_warnings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            medication_id INTEGER,
+            warning_type TEXT,
+            description TEXT NOT NULL,
+            source_id INTEGER,
+            last_reviewed TEXT
+        )
+        """)
+
+        # Reference-based medication interaction records.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_interactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            medication_a TEXT NOT NULL,
+            medication_b TEXT NOT NULL,
+            severity TEXT,
+            description TEXT,
+            source_id INTEGER,
+            last_reviewed TEXT,
+            verification_status TEXT DEFAULT 'unverified'
+        )
+        """)
+
+        # Sources used by the knowledge engine.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS knowledge_sources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_name TEXT NOT NULL,
+            organisation TEXT,
+            source_url TEXT,
+            source_type TEXT,
+            publication_date TEXT,
+            accessed_date TEXT
+        )
+        """)
+
+        # Curated clinical guidelines.
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS clinical_guidelines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            organisation TEXT,
+            topic TEXT,
+            source_url TEXT,
+            publication_date TEXT,
+            last_reviewed TEXT,
+            verification_status TEXT DEFAULT 'unverified'
+        )
+        """)
+
         columns = [
             row[1] for row in
             conn.execute("PRAGMA table_info(medications)")
@@ -161,13 +246,15 @@ def record_event(med_id, name, event_type, source="patient_app"):
     with connect() as conn:
         conn.execute("""
         INSERT INTO events
-        (medication_id, medication_name, event_type, event_time)
-        VALUES (?, ?, ?, ?)
+        (medication_id, medication_name, event_type,
+         event_time, event_source)
+        VALUES (?, ?, ?, ?, ?)
         """, (
             med_id,
             name,
             event_type,
-            datetime.now().isoformat(timespec="seconds")
+            datetime.now().isoformat(timespec="seconds"),
+            source
         ))
 
 
