@@ -167,6 +167,142 @@ def initialise_engine_tables():
 
         conn.commit()
 
+def get_verified_medication_interactions(
+    medication_a,
+    medication_b
+):
+    medication_a = (medication_a or "").strip()
+    medication_b = (medication_b or "").strip()
+
+    if not medication_a or not medication_b:
+        return []
+
+    with get_connection() as conn:
+
+        if not table_exists(conn, "medication_interactions"):
+            return []
+
+        results = conn.execute("""
+            SELECT
+                i.id,
+                i.medication_a,
+                i.medication_b,
+                i.severity,
+                i.description,
+                i.last_reviewed,
+                s.source_name,
+                s.organisation,
+                s.source_url
+            FROM medication_interactions AS i
+            LEFT JOIN knowledge_sources AS s
+                ON i.source_id = s.id
+            WHERE
+                i.verification_status = 'verified'
+                AND (
+                    (
+                        LOWER(TRIM(i.medication_a)) = LOWER(?)
+                        AND LOWER(TRIM(i.medication_b)) = LOWER(?)
+                    )
+                    OR
+                    (
+                        LOWER(TRIM(i.medication_a)) = LOWER(?)
+                        AND LOWER(TRIM(i.medication_b)) = LOWER(?)
+                    )
+                )
+            ORDER BY i.last_reviewed DESC
+        """, (
+            medication_a,
+            medication_b,
+            medication_b,
+            medication_a
+        )).fetchall()
+
+    return [dict(row) for row in results]
+
+def interaction_response(question):
+
+    question = (question or "").strip().lower()
+
+    if not question:
+        return "Please specify both medication names."
+
+    with get_connection() as conn:
+
+        if not table_exists(conn, "medication_interactions"):
+            return "The medication interaction database is unavailable."
+
+        pairs = conn.execute("""
+            SELECT DISTINCT medication_a, medication_b
+            FROM medication_interactions
+            WHERE verification_status = 'verified'
+        """).fetchall()
+
+    matched_pairs = []
+
+    for medication_a, medication_b in pairs:
+
+        name_a = medication_a.strip().lower()
+        name_b = medication_b.strip().lower()
+
+        if name_a and name_b:
+            if name_a in question and name_b in question:
+                matched_pairs.append((medication_a, medication_b))
+
+    if not matched_pairs:
+        return (
+            "I couldn't find a matching verified interaction record "
+            "for two medication names in your question. "
+            "This does not establish that the combination is safe. "
+            "Please consult a qualified healthcare professional "
+            "about medication combinations."
+        )
+
+    output = ["### Medication interaction records"]
+
+    for medication_a, medication_b in matched_pairs:
+
+        records = get_verified_medication_interactions(
+            medication_a,
+            medication_b
+        )
+
+        for record in records:
+
+            output.append(
+                f"\n**{record['medication_a']} + "
+                f"{record['medication_b']}**"
+            )
+
+            output.append(
+                f"- Severity recorded: {record['severity'] or 'Not specified'}"
+            )
+
+            output.append(
+                f"- Description: {record['description'] or 'No description recorded'}"
+            )
+
+            if record.get("source_name"):
+                output.append(
+                    f"- Source: {record['source_name']}"
+                )
+
+            if record.get("source_url"):
+                output.append(
+                    f"- Source URL: {record['source_url']}"
+                )
+
+            if record.get("last_reviewed"):
+                output.append(
+                    f"- Last reviewed: {record['last_reviewed']}"
+                )
+
+    output.append(
+        "\nThese are database records, not personalised medical advice. "
+        "Do not start, stop, or change medication based on this response."
+    )
+
+    return "\n".join(output)
+
 
 # ============================================================
 # INPUT VALIDATION
