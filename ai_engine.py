@@ -328,16 +328,75 @@ INTENTS = {
 }
 
 
+
 def detect_intent(question):
 
-    text = question.lower().strip()
+    text = (question or "").lower().strip()
 
-    for intent, phrases in INTENTS.items():
+    if not text:
+        return "unknown"
 
-        if any(phrase in text for phrase in phrases):
-            return intent
+    # Normalise punctuation
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # CAREPULSE feature questions
+    feature_phrases = [
+        "what can carepulse do",
+        "what does carepulse do",
+        "what is carepulse",
+        "how does carepulse work",
+        "carepulse features",
+        "help me understand carepulse"
+    ]
+
+    if any(phrase in text for phrase in feature_phrases):
+        return "features"
+
+    # Reminder questions
+    reminder_keywords = [
+        "reminder", "reminders", "schedule",
+        "scheduled", "next dose", "upcoming dose",
+        "when do i take", "when is my medication",
+        "medicine time", "medication time"
+    ]
+
+    if any(word in text for word in reminder_keywords):
+        return "reminders"
+
+    # Medication history
+    history_keywords = [
+        "history", "past events", "previous events",
+        "medication records", "medicine records",
+        "what happened", "show my events"
+    ]
+
+    if any(word in text for word in history_keywords):
+        return "events"
+
+    # Adherence and patterns
+    pattern_keywords = [
+        "adherence", "adherent", "pattern",
+        "patterns", "missed", "missed doses",
+        "taken doses", "compliance", "consistency"
+    ]
+
+    if any(word in text for word in pattern_keywords):
+        return "patterns"
+
+    # Saved medication questions
+    medication_keywords = [
+        "my medication", "my medications",
+        "my medicine", "my medicines",
+        "saved medication", "saved medications",
+        "list my medication", "show my medication"
+    ]
+
+    if any(word in text for word in medication_keywords):
+        return "medications"
 
     return "unknown"
+
 
 
 # ==========================================
