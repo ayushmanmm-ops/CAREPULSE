@@ -502,9 +502,22 @@ def medication_response():
     return "\n\n".join(lines)
 
 
+
 def event_response():
 
     data = analyse_events(30)
+
+    source_counts = data.get("source_counts", {})
+
+    source_lines = []
+
+    for source, count in sorted(source_counts.items()):
+        source_lines.append(
+            f"- {source}: **{count}**"
+        )
+
+    if not source_lines:
+        source_lines.append("- No event-source data available.")
 
     return f"""
 ### Your last 30 days
@@ -516,8 +529,15 @@ def event_response():
 - Reminders sent: **{data['reminders_sent']}**
 - Reminders dismissed: **{data['reminders_dismissed']}**
 
+### Event sources
+
+{chr(10).join(source_lines)}
+
 These are different event categories. They are not interchangeable.
+
+A compartment opening does not confirm that medication was swallowed.
 """
+
 
 
 def pattern_response():
