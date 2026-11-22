@@ -251,6 +251,65 @@ def add_medication_warning(
 
         return cursor.lastrowid
 
+def add_medication_interaction(
+    medication_a,
+    medication_b,
+    severity,
+    description,
+    source_id
+):
+
+    medication_a = (medication_a or "").strip()
+    medication_b = (medication_b or "").strip()
+    severity = (severity or "").strip()
+    description = (description or "").strip()
+
+    if not medication_a or not medication_b:
+        raise ValueError("Both medication names are required.")
+
+    if medication_a.lower() == medication_b.lower():
+        raise ValueError("The two medications must be different.")
+
+    if not severity or not description:
+        raise ValueError("Severity and description are required.")
+
+    if not isinstance(source_id, int) or source_id <= 0:
+        raise ValueError("A valid source ID is required.")
+
+    with get_connection() as conn:
+
+        source = conn.execute("""
+        SELECT id
+        FROM knowledge_sources
+        WHERE id = ?
+        """, (source_id,)).fetchone()
+
+        if not source:
+            raise ValueError("Knowledge source not found.")
+
+        cursor = conn.execute("""
+        INSERT INTO medication_interactions (
+            medication_a,
+            medication_b,
+            severity,
+            description,
+            source_id,
+            last_reviewed,
+            verification_status
+        )
+        VALUES (?, ?, ?, ?, ?, NULL, 'unverified')
+        """, (
+            medication_a,
+            medication_b,
+            severity,
+            description,
+            source_id
+        ))
+
+        conn.commit()
+
+        return cursor.lastrowid
+
 
 def review_medication_warning(
     warning_id,
