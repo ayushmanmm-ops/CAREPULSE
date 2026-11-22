@@ -258,7 +258,11 @@ def record_event(med_id, name, event_type, source="patient_app"):
         ))
 
 
-def get_events():
+        return conn.execute("""
+        SELECT medication_name, event_type, event_time, event_source
+        FROM events
+        ORDER BY id DESC
+        """).fetchall()
 
     with connect() as conn:
         return conn.execute("""
@@ -690,7 +694,7 @@ elif page == "Medication History":
             ]
         )
 
-        for name, event_type, event_time in events:
+        for name, event_type, event_time, event_source in events:
 
             if (
                 filter_type != "All Events"
@@ -702,7 +706,7 @@ elif page == "Medication History":
 
                 st.write(f"**Medication:** {name}")
                 st.write(f"**Event:** {event_type}")
-                st.caption(event_time)
+                st.caption(f"{event_time} | Source: {event_source}")
 
     else:
         st.info("No recorded events yet.")
