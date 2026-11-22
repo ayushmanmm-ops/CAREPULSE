@@ -435,6 +435,7 @@ def review_medication_interaction(
         return True
 
 
+
 def review_medication_warning(
     warning_id,
     reviewer,
@@ -466,11 +467,21 @@ def review_medication_warning(
         if not warning:
             raise ValueError("Medication warning not found.")
 
-        if decision == "approved" and not warning[1]:
-            raise ValueError("A source is required before approval.")
-
         if decision == "approved":
+
+            if not warning[1]:
+                raise ValueError("A source is required before approval.")
+
+            source_check = validate_knowledge_source(warning[1])
+
+            if not source_check["valid"]:
+                raise ValueError(
+                    "Source validation failed: "
+                    + source_check["reason"]
+                )
+
             status = "verified"
+
         else:
             status = "rejected"
 
@@ -517,6 +528,7 @@ def review_medication_warning(
         conn.commit()
 
         return True
+
 
 
 def add_knowledge_source(
