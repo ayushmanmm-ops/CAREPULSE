@@ -540,6 +540,7 @@ A compartment opening does not confirm that medication was swallowed.
 
 
 
+
 def pattern_response():
 
     patterns = medication_patterns(30)
@@ -547,38 +548,68 @@ def pattern_response():
     if not patterns:
         return "No medication records are available for analysis."
 
-    output = ["### Medication event analysis — last 30 days"]
+    output = ["### Medication event analysis – last 30 days"]
 
     for name, stats in patterns.items():
 
-        output.append(
-            f"""
-**{name}**
+        output.append(f"\n**{name}**\n")
 
-- Compartment openings: {stats['openings']}
-- Patient-reported taken: {stats['reported_taken']}
-- Patient-reported missed: {stats['reported_missed']}
-- Reminders sent: {stats['reminders_sent']}
-- Reminders dismissed: {stats['reminders_dismissed']}
-"""
+        output.append(
+            f"- Compartment openings: {stats['openings']}"
         )
+
+        output.append(
+            f"- Patient-reported taken: {stats['reported_taken']}"
+        )
+
+        output.append(
+            f"- Patient-reported missed: {stats['reported_missed']}"
+        )
+
+        output.append(
+            f"- Reminders sent: {stats['reminders_sent']}"
+        )
+
+        output.append(
+            f"- Reminders dismissed: {stats['reminders_dismissed']}"
+        )
+
+        percentage = stats.get("reported_taken_percentage")
+
+        if percentage is not None:
+            output.append(
+                f"- Taken reports among patient reports: {percentage}%"
+            )
+        else:
+            output.append(
+                "- Taken-report percentage: Insufficient patient reports"
+            )
+
+        sources = stats.get("event_sources", {})
+
+        if sources:
+            output.append("- Event sources:")
+
+            for source, count in sorted(sources.items()):
+                output.append(f"  - {source}: {count}")
 
         if (
             stats["openings"] > 0
             and stats["reported_taken"] == 0
         ):
             output.append(
-                "Observation: Openings were recorded, "
-                "but no patient-reported intake events "
-                "were recorded in this period."
+                "- Observation: Compartment openings were recorded, "
+                "but no patient-reported taken events were recorded."
             )
 
     output.append(
-        "\nThese observations describe database records, "
-        "not proof of medication ingestion or non-ingestion."
+        "\nThese observations describe database records. "
+        "Compartment openings do not prove medication ingestion. "
+        "Patient-reported events are not independently verified."
     )
 
     return "\n".join(output)
+
 
 
 def reminder_response():
