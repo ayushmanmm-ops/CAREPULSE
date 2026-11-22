@@ -546,6 +546,63 @@ def add_knowledge_source(
 
         return cursor.lastrowid
 
+def validate_knowledge_source(source_id):
+
+    if not isinstance(source_id, int) or source_id <= 0:
+        return {
+            "valid": False,
+            "reason": "Invalid source ID."
+        }
+
+    with get_connection() as conn:
+
+        conn.row_factory = sqlite3.Row
+
+        source = conn.execute("""
+        SELECT
+            id,
+            source_name,
+            organisation,
+            source_url,
+            source_type,
+            accessed_date
+        FROM knowledge_sources
+        WHERE id = ?
+        """, (source_id,)).fetchone()
+
+        if not source:
+            return {
+                "valid": False,
+                "reason": "Source not found."
+            }
+
+        source = dict(source)
+
+        missing_fields = [
+            field for field in (
+                "source_name",
+                "organisation",
+                "source_url",
+                "source_type"
+            )
+            if not source.get(field)
+            or not str(source[field]).strip()
+        ]
+
+        if missing_fields:
+            return {
+                "valid": False,
+                "reason": "Missing source information: "
+                          + ", ".join(missing_fields),
+                "source": source
+            }
+
+        return {
+            "valid": True,
+            "reason": "Required source information is present.",
+            "source": source
+        }
+
 
 def add_medication_reference(
     generic_name,
