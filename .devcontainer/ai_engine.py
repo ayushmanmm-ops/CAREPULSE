@@ -310,6 +310,86 @@ def add_medication_interaction(
 
         return cursor.lastrowid
 
+def review_medication_interaction(
+    interaction_id,
+    reviewer,
+    decision,
+    review_notes=""
+):
+
+    reviewer = (reviewer or "").strip()
+    decision = (decision or "").strip().lower()
+    review_notes = (review_notes or "").strip()
+
+    if not isinstance(interaction_id, int) or interaction_id <= 0:
+        raise ValueError("A valid interaction ID is required.")
+
+    if not reviewer:
+        raise ValueError("Reviewer name is required.")
+
+    if decision not in ("approved", "rejected"):
+        raise ValueError("Decision must be approved or rejected.")
+
+    with get_connection() as conn:
+
+        interaction = conn.execute("""
+        SELECT id, source_id
+        FROM medication_interactions
+        WHERE id = ?
+        """, (interaction_id,)).fetchone()
+
+        if not interaction:
+            raise ValueError("Interaction record not found.")
+
+        if decision == "approved" and not interaction[1]:
+            raise ValueError("A source is required before approval.")
+
+        status = "verified" if decision == "approved" else "rejected"
+
+        conn.execute("""
+        UPDATE medication_interactions
+        SET
+            verification_status = ?,
+            last_reviewed = ?
+        WHERE id = ?
+        """, (
+            status,
+            datetime.now().date().isoformat(),
+            interaction_id
+        ))
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS medication_interaction_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            interaction_id INTEGER NOT NULL,
+            reviewer TEXT NOT NULL,
+            review_decision TEXT NOT NULL,
+            review_notes TEXT,
+            reviewed_at TEXT NOT NULL
+        )
+        """)
+
+        conn.execute("""
+        INSERT INTO medication_interaction_reviews (
+            interaction_id,
+            reviewer,
+            review_decision,
+            review_notes,
+            reviewed_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            interaction_id,
+            reviewer,
+            decision,
+            review_notes,
+            datetime.now().isoformat(timespec="seconds")
+        ))
+
+        conn.commit()
+
+        return True
+
 
 def review_medication_warning(
     warning_id,
