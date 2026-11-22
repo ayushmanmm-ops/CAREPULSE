@@ -5,9 +5,6 @@ from datetime import datetime, timedelta
 import os
 import sys
 
-st.write("APP DIRECTORY:", os.getcwd())
-st.write("FILES:", os.listdir(os.path.dirname(os.path.abspath(__file__))))
-st.write("PYTHON PATH:", sys.path)
 
 from ai_engine import answer_question
 
