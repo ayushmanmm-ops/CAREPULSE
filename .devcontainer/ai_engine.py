@@ -140,6 +140,56 @@ def get_medication_warnings(medication_id):
 
         return [dict(row) for row in results]
 
+def get_verified_medication_interactions(medication_a, medication_b):
+
+    medication_a = (medication_a or "").strip()
+    medication_b = (medication_b or "").strip()
+
+    if not medication_a or not medication_b:
+        return []
+
+    with get_connection() as conn:
+
+        conn.row_factory = sqlite3.Row
+
+        results = conn.execute("""
+        SELECT
+            i.id,
+            i.medication_a,
+            i.medication_b,
+            i.severity,
+            i.description,
+            i.last_reviewed,
+            i.verification_status,
+            s.source_name,
+            s.organisation,
+            s.source_url
+        FROM medication_interactions AS i
+        LEFT JOIN knowledge_sources AS s
+            ON i.source_id = s.id
+        WHERE
+            i.verification_status = 'verified'
+            AND (
+                (
+                    LOWER(i.medication_a) = LOWER(?)
+                    AND LOWER(i.medication_b) = LOWER(?)
+                )
+                OR
+                (
+                    LOWER(i.medication_a) = LOWER(?)
+                    AND LOWER(i.medication_b) = LOWER(?)
+                )
+            )
+        ORDER BY i.last_reviewed DESC
+        """, (
+            medication_a,
+            medication_b,
+            medication_b,
+            medication_a
+        )).fetchall()
+
+        return [dict(row) for row in results]
+
 def add_knowledge_source(
     source_name,
     organisation,
