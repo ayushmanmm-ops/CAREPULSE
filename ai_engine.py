@@ -734,7 +734,36 @@ def reminder_response():
         )
 
     return "\n".join(output)
+def reminder_intelligence(days=30):
 
+    data = analyse_events(days)
+
+    reminders_sent = data["reminders_sent"]
+    reminders_dismissed = data["reminders_dismissed"]
+
+    total_reminder_events = (
+        reminders_sent + reminders_dismissed
+    )
+
+    if total_reminder_events:
+        dismissed_percentage = round(
+            reminders_dismissed /
+            total_reminder_events * 100,
+            1
+        )
+    else:
+        dismissed_percentage = None
+
+    upcoming = get_next_reminders()
+
+    return {
+        "period_days": days,
+        "reminders_sent": reminders_sent,
+        "reminders_dismissed": reminders_dismissed,
+        "total_reminder_events": total_reminder_events,
+        "dismissed_percentage": dismissed_percentage,
+        "upcoming_reminders": upcoming
+    }
 
 # ==========================================
 # MAIN INTELLIGENCE ORCHESTRATOR
