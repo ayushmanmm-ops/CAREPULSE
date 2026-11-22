@@ -105,6 +105,57 @@ def add_knowledge_source(
         return cursor.lastrowid
 
 
+def add_medication_reference(
+    generic_name,
+    brand_names=None,
+    drug_class=None,
+    approved_uses=None,
+    dosage_forms=None,
+    storage_guidance=None,
+    source_id=None
+):
+
+    if not generic_name or not generic_name.strip():
+        raise ValueError("Generic medication name is required")
+
+    with get_connection() as conn:
+
+        if source_id is not None:
+            source = conn.execute("""
+                SELECT id FROM knowledge_sources
+                WHERE id = ?
+            """, (source_id,)).fetchone()
+
+            if not source:
+                raise ValueError("Knowledge source does not exist")
+
+        cursor = conn.execute("""
+        INSERT INTO medication_reference (
+            generic_name,
+            brand_names,
+            drug_class,
+            approved_uses,
+            dosage_forms,
+            storage_guidance,
+            source_id,
+            last_reviewed,
+            verification_status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            generic_name.strip(),
+            brand_names,
+            drug_class,
+            approved_uses,
+            dosage_forms,
+            storage_guidance,
+            source_id,
+            None,
+            "unverified"
+        ))
+
+        return cursor.lastrowid
+
 def get_database_data():
 
     if not DB_PATH.exists():
