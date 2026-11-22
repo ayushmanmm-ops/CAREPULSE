@@ -278,7 +278,39 @@ def patient_insights(days=30):
         "insights": insights,
         "medication_patterns": patterns
     }
+def patient_insights_response(days=30):
 
+    report = patient_insights(days)
+
+    output = [
+        f"### Patient Insights — Last {days} Days",
+        "",
+        f"- Total recorded events: {report['total_events']}",
+        f"- Medications analysed: {report['medications_analysed']}",
+        f"- Patient-reported taken: {report['patient_reported_taken']}",
+        f"- Patient-reported missed: {report['patient_reported_missed']}",
+        f"- Compartment openings: {report['compartment_openings']}",
+        f"- Reminders sent: {report['reminders_sent']}",
+        f"- Reminders dismissed: {report['reminders_dismissed']}",
+        "",
+        "### Observations"
+    ]
+
+    if report["insights"]:
+        for insight in report["insights"]:
+            output.append(f"- {insight}")
+    else:
+        output.append("- No notable event patterns were identified.")
+
+    output.extend([
+        "",
+        "These observations describe recorded data only.",
+        "Compartment openings do not confirm medication ingestion.",
+        "Patient reports are not independently verified.",
+        "This report does not provide medical advice."
+    ])
+
+    return "\n".join(output)
 
 # ==========================================
 # NEXT REMINDER ANALYSIS
