@@ -20,6 +20,7 @@ def get_connection():
     return sqlite3.connect(DB_PATH)
 
 
+
 def get_database_data():
 
     if not DB_PATH.exists():
@@ -48,6 +49,8 @@ def get_database_data():
             "reminder_times"
             if "reminder_times" in med_columns
             else "reminder"
+            if "reminder" in med_columns
+            else "NULL"
         )
 
         dosage_column = (
@@ -80,16 +83,24 @@ def get_database_data():
         if not required_events.issubset(event_columns):
             return medications, []
 
-        events = conn.execute("""
+        source_column = (
+            "event_source"
+            if "event_source" in event_columns
+            else "'unknown'"
+        )
+
+        events = conn.execute(f"""
             SELECT
                 medication_name,
                 event_type,
-                event_time
+                event_time,
+                {source_column}
             FROM events
             ORDER BY event_time DESC
         """).fetchall()
 
     return medications, events
+
 
 
 # ==========================================
