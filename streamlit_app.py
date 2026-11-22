@@ -676,47 +676,84 @@ elif page == "Patient Profile":
 # AI ASSISTANT
 # ==========================================
 
+
 elif page == "AI Assistant":
 
-    st.title("🤖 CAREPULSE AI Assistant")
-
-    st.write(
-        "A future medical information assistant "
-        "and medication-event analysis system."
-    )
+    st.title("🧠 CAREPULSE Intelligence")
+    st.caption("Medication Event Intelligence Assistant")
 
     st.info(
-        "AI integration is the next development stage."
+        "This prototype analyses CAREPULSE records "
+        "and explains application features. It does not "
+        "provide medical diagnosis or treatment recommendations."
     )
 
-    question = st.text_area(
-        "Ask a general medication information question"
+    if "carepulse_chat_history" not in st.session_state:
+        st.session_state.carepulse_chat_history = []
+
+    with st.expander("Conversation controls"):
+        if st.button("Clear conversation"):
+            st.session_state.carepulse_chat_history = []
+            st.rerun()
+
+    st.subheader("Explore your CAREPULSE data")
+
+    examples = [
+        "Show my medications",
+        "Give me my event summary",
+        "Analyse my medication patterns",
+        "What is my next reminder?",
+        "Explain compartment openings"
+    ]
+
+    cols = st.columns(2)
+
+    for i, example in enumerate(examples):
+        with cols[i % 2]:
+            if st.button(example, key=f"example_{i}"):
+                st.session_state.carepulse_pending_question = example
+
+    for message in st.session_state.carepulse_chat_history:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    prompt = st.chat_input(
+        "Ask CAREPULSE Intelligence..."
     )
 
-    if st.button("Submit Question"):
+    if not prompt and "carepulse_pending_question" in st.session_state:
+        prompt = st.session_state.pop(
+            "carepulse_pending_question"
+        )
 
-        if question.strip():
+    if prompt:
 
-            st.warning(
-                "The AI service is not connected yet. "
-                "No medical advice has been generated."
-            )
+        st.session_state.carepulse_chat_history.append({
+            "role": "user",
+            "content": prompt
+        })
 
-        else:
-            st.error("Enter a question.")
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        response = answer_question(
+            prompt,
+            st.session_state.carepulse_chat_history
+        )
+
+        st.session_state.carepulse_chat_history.append({
+            "role": "assistant",
+            "content": response
+        })
+
+        with st.chat_message("assistant"):
+            st.markdown(response)
 
     st.divider()
 
-    st.subheader("AI Capabilities Planned")
-
-    st.write("- Medical information explanations")
-    st.write("- Medication-event pattern analysis")
-    st.write("- Reminder-event comparisons")
-    st.write("- Weekly and monthly reports")
-    st.write("- Clear distinction between sensor and patient reports")
-
     st.caption(
-        "CAREPULSE does not independently prescribe or change medication."
+        "CAREPULSE Intelligence | "
+        "Database-connected analytical assistant"
     )
 
 
