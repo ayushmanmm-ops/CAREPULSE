@@ -251,6 +251,7 @@ def add_medication_warning(
 
         return cursor.lastrowid
 
+
 def review_medication_warning(
     warning_id,
     reviewer,
@@ -282,15 +283,23 @@ def review_medication_warning(
         if not warning:
             raise ValueError("Medication warning not found.")
 
-        if not warning[1]:
+        if decision == "approved" and not warning[1]:
             raise ValueError("A source is required before approval.")
+
+        if decision == "approved":
+            status = "verified"
+        else:
+            status = "rejected"
 
         conn.execute("""
         UPDATE medication_warnings
-        SET last_reviewed = ?
+        SET
+            last_reviewed = ?,
+            verification_status = ?
         WHERE id = ?
         """, (
             datetime.now().date().isoformat(),
+            status,
             warning_id
         ))
 
@@ -325,6 +334,7 @@ def review_medication_warning(
         conn.commit()
 
         return True
+
 
 def add_knowledge_source(
     source_name,
