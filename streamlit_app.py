@@ -1,13 +1,11 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime, timedelta
-
 import os
 import sys
 
 
 from ai_engine import answer_question, get_openai_client
-
 # ==========================================
 # CAREPULSE V2
 # ==========================================
