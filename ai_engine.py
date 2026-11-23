@@ -880,8 +880,9 @@ def answer_question(question, history=None):
         return medication_response()
 
     if intent == "events":
-    context = event_response()
-    return generate_ai_response(question, context)
+        context = text_response()
+        return generate_ai_response(question, context)
+
 
     if intent == "patterns":
         return pattern_response()
