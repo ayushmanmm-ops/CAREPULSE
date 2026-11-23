@@ -22,14 +22,19 @@ def get_openai_client():
         return None
 
     return OpenAI(api_key=api_key)
+
+# ==========================================
+# DATABASE CONNECTION
+# ==========================================
+
 def generate_ai_response(question, context):
 
     client = get_openai_client()
 
     if client is None:
         return (
-            "CAREPULSE AI is currently unavailable. "
-            "Please try again later."
+            "CAREPULSE AI is unavailable: "
+            "OpenAI API key not found."
         )
 
     try:
@@ -50,13 +55,16 @@ def generate_ai_response(question, context):
             )
         )
 
+        if not response.output_text:
+            return "The AI returned an empty response."
+
         return response.output_text
 
     except Exception as e:
-       "return" f"OpenAI connection error: {type(e).__name__}: {e}"
-# ==========================================
-# DATABASE CONNECTION
-# ==========================================
+        return (
+            f"OpenAI connection error: "
+            f"{type(e).__name__}: {e}"
+        )
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
@@ -513,8 +521,6 @@ INTENTS = {
 
 
 
-
-
 def detect_intent(question):
 
     text = (question or "").lower().strip()
@@ -616,15 +622,15 @@ if any(word in text for word in [
 ]):
     "return" "patient_insights"
 
-    # Adherence and patterns
+ # Adherence and patterns
     if any(word in text for word in [
-        "adherence", "adherent", "patterns",
-        "pattern", "trend", "trends",
-        "analyse my data", "analyze my data",
-        "monthly report", "weekly report",
-        "last 30 days", "consistency"
+    "adherence", "adherent", "patterns",
+    "pattern", "trend", "trends",
+    "analyse my data", "analyze my data",
+    "monthly report", "weekly report",
+    "last 30 days", "consistency"
     ]):
-        "return" "patterns"
+      "return" "patterns"
 
     # Saved medications
     if any(word in text for word in [
