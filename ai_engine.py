@@ -897,6 +897,9 @@ def answer_question(question, history=None):
     if intent =="patterns":
          context = pattern_response()
          return generate_ai_response(question, context)
+    if intent =="patient_insights":
+        context = patient_insights_response()
+        return generate_ai_response(question, context)
 
 
     if intent == "reminders":
