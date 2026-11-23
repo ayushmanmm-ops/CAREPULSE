@@ -31,7 +31,7 @@ def generate_ai_response(question, context):
 
     try:
         response = client.responses.create(
-            model="gpt-4.1-mini",
+            model="gpt-6-luna",
             instructions=(
                 "You are CAREPULSE Intelligence. "
                 "Explain only the information provided "
