@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import os
 import sys
 
-
+import ai_engine
 from ai_engine import answer_question, get_openai_client
 # ==========================================
 # CAREPULSE V2
@@ -18,7 +18,7 @@ st.set_page_config(
 
 if st.button("Test OpenAI Connection"):
 
-    client = get_openai_client()
+    client = ai_engine.get_openai_client()
 
     if client is None:
         st.error("OpenAI API key not found.")
