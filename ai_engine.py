@@ -13,7 +13,10 @@ from openai import OpenAI
 DB_PATH = Path(__file__).resolve().parent / "carepulse.db"
 def get_openai_client():
 
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = st.secrets.get(
+        "OPENAI_API_KEY",
+        os.getenv("OPENAI_API_KEY")
+    )
 
     if not api_key:
         return None
