@@ -53,7 +53,7 @@ def generate_ai_response(question, context):
         return response.output_text
 
     except Exception as e:
-    return f"OpenAI connection error: {type(e).__name__}: {e}"
+       "return" f"OpenAI connection error: {type(e).__name__}: {e}"
 # ==========================================
 # DATABASE CONNECTION
 # ==========================================
