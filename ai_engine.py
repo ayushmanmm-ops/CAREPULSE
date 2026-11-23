@@ -19,7 +19,41 @@ def get_openai_client():
         return None
 
     return OpenAI(api_key=api_key)
+def generate_ai_response(question, context):
 
+    client = get_openai_client()
+
+    if client is None:
+        return (
+            "CAREPULSE AI is currently unavailable. "
+            "Please try again later."
+        )
+
+    try:
+        response = client.responses.create(
+            model="gpt-4.1-mini",
+            instructions=(
+                "You are CAREPULSE Intelligence. "
+                "Explain only the information provided "
+                "in the supplied context. "
+                "Never invent medication records, warnings, "
+                "interactions, diagnoses, or prescriptions. "
+                "Do not recommend changing medication. "
+                "If information is missing, say so clearly."
+            ),
+            input=(
+                f"User question: {question}\n\n"
+                f"Available CAREPULSE data:\n{context}"
+            )
+        )
+
+        return response.output_text
+
+    except Exception:
+        return (
+            "I'm temporarily unable to generate a response. "
+            "Please try again later."
+        )
 # ==========================================
 # DATABASE CONNECTION
 # ==========================================
