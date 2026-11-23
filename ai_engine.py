@@ -52,11 +52,8 @@ def generate_ai_response(question, context):
 
         return response.output_text
 
-    except Exception:
-        return (
-            "I'm temporarily unable to generate a response. "
-            "Please try again later."
-        )
+    except Exception as e:
+    return f"OpenAI connection error: {type(e).__name__}: {e}"
 # ==========================================
 # DATABASE CONNECTION
 # ==========================================
