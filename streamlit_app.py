@@ -18,6 +18,31 @@ st.set_page_config(
     layout="wide"
 )
 
+if st.button("Test OpenAI Connection"):
+
+    client = get_openai_client()
+
+    if client is None:
+        st.error("OpenAI API key not found.")
+
+    else:
+        try:
+            response = client.responses.create(
+                model="gpt-6-luna",
+                input="Reply with exactly: CAREPULSE connection successful.",
+                max_output_tokens=30
+            )
+
+            if response.output_text:
+                st.success(response.output_text)
+            else:
+                st.warning("OpenAI returned an empty response.")
+
+        except Exception as e:
+            st.error(
+                f"Connection failed: {type(e).__name__}"
+            )
+
 DB = "carepulse.db"
 
 
