@@ -597,6 +597,16 @@ def detect_intent(question):
         "my events", "activity", "past events"
     ]):
         return "events"
+# Patient insights
+if any(word in text for word in [
+    "patient insights",
+    "my insights",
+    "insights",
+    "observations",
+    "summarise my data",
+    "summarize my data"
+]):
+    "return" "patient_insights"
 
     # Adherence and patterns
     if any(word in text for word in [
@@ -606,16 +616,16 @@ def detect_intent(question):
         "monthly report", "weekly report",
         "last 30 days", "consistency"
     ]):
-        return "patterns"
+        "return" "patterns"
 
     # Saved medications
     if any(word in text for word in [
         "medication", "medications",
         "medicine", "medicines", "drug"
     ]):
-        return "medications"
+        "return" "medications"
 
-    return "unknown"
+    "return" "unknown"
 
 
 
