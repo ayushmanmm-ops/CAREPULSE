@@ -5,7 +5,7 @@ import os
 import sys
 
 import ai_engine
-from ai_engine import answer_question, get_openai_client
+from ai_engine import answer_question
 # ==========================================
 # CAREPULSE V2
 # ==========================================
