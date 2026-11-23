@@ -3,7 +3,8 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from collections import Counter
-
+import os
+from openai import OpenAI
 
 # ==========================================
 # CAREPULSE INTELLIGENCE ENGINE
