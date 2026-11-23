@@ -884,8 +884,10 @@ def answer_question(question, history=None):
         return generate_ai_response(question, context)
 
 
-    if intent == "patterns":
-        return pattern_response()
+    if intent =="patterns":
+         context = pattern_response()
+         return generate_ai_response(question, context)
+
 
     if intent == "reminders":
         return reminder_response()
