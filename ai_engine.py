@@ -560,14 +560,22 @@ def detect_intent(question):
         "contraindication", "contraindications"
     ]):
         return "warnings"
-
+# Reminder intelligence
+if any(phrase in text for phrase in [
+    "reminder intelligence",
+    "reminder analysis",
+    "reminder analytics",
+    "dismissed reminders",
+    "reminder statistics"
+]):
+    "return" "reminder_intelligence"
     # Reminders
     if any(word in text for word in [
         "reminder", "reminders", "schedule",
         "scheduled", "next dose", "upcoming dose",
         "medication time", "medicine time"
     ]):
-        return "reminders"
+        "return" "reminders"
 
     # Compartment openings
     if any(word in text for word in [
@@ -575,28 +583,28 @@ def detect_intent(question):
         "compartment opened",
         "opened compartment"
     ]):
-        return "openings"
+        "return" "openings"
 
     # Patient-reported taken
     if any(word in text for word in [
         "reported taken", "patient reported",
         "recorded taken", "medication taken"
     ]):
-        return "taken"
+        "return" "taken"
 
     # Patient-reported missed
     if any(word in text for word in [
         "reported missed", "missed events",
         "missed medication"
     ]):
-        return "missed"
+        "return" "missed"
 
     # Event history
     if any(word in text for word in [
         "history", "event history",
         "my events", "activity", "past events"
     ]):
-        return "events"
+        "return" "events"
 # Patient insights
 if any(word in text for word in [
     "patient insights",
@@ -890,17 +898,21 @@ def answer_question(question, history=None):
         return medication_response()
 
     if intent == "events":
-        context = text_response()
+        context = event_response()
         return generate_ai_response(question, context)
 
 
     if intent =="patterns":
          context = pattern_response()
          return generate_ai_response(question, context)
+
     if intent =="patient_insights":
         context = patient_insights_response()
         return generate_ai_response(question, context)
 
+    if intent == "reminder_intelligence":
+        context = reminder_intelligence_response()
+        return generate_ai_response(question, context)
 
     if intent == "reminders":
         return reminder_response()
