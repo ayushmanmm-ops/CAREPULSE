@@ -11,7 +11,14 @@ from openai import OpenAI
 # ==========================================
 
 DB_PATH = Path(__file__).resolve().parent / "carepulse.db"
+def get_openai_client():
 
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        return None
+
+    return OpenAI(api_key=api_key)
 
 # ==========================================
 # DATABASE CONNECTION
